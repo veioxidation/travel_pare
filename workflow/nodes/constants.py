@@ -1,0 +1,2 @@
+itinerary_generation_message = 'I have prepared a sample itinerary for you! Please check the "Itinerary" tab!.'
+bookings_generation_message = 'I have prepared a list of potential bookings for you. Please check the "Bookings" tab!.'

@@ -6,9 +6,9 @@ from langgraph.graph import StateGraph
 from pydantic import BaseModel
 
 from database.memory_db import pool
-from nodes.summarizer_node import itinerary_node, bookings_node
+from workflow.nodes.summarizer_node import itinerary_node, bookings_node
 from workflow.TripPlannerState import TripPlannerState
-from nodes.trip_interviewer import interviewer_node
+from workflow.nodes.trip_interviewer import interviewer_node
 
 
 class Trip(BaseModel):

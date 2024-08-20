@@ -13,7 +13,9 @@ Produce everything in .md format.
 
 
 trip_planner_user_message = """
-The trip is to {country} and will last from {start_date} to {end_date}. The origin country is {origin_country}.
+{traveler_info}
+
+The trip is to {destination_country} and will last from {start_date} to {end_date}. The origin country is {origin_country}.
 
 The user has following expectations and requirements:
 {expectations}
@@ -25,6 +27,7 @@ Your task is to produce a list of bookings for the user, with the rough cost sim
 Include the following:
 - flights + any transportation
 - accommodation
+- additional attractions
 
 Do NOT include the itinerary in the output. Focus only on the costs and bookings.
 Include the rough cost, as well as summarize it all.
@@ -34,7 +37,9 @@ Produce everything in .md format.
 
 
 trip_booker_user_message = """
-The trip is to {country} and will last from {start_date} to {end_date}. The origin country is {origin_country}.
+{traveler_info}
+
+The trip is to {destination_country} and will last from {start_date} to {end_date}. The origin country is {origin_country}.
 
 The user has following expectations and requirements:
 {expectations}

@@ -10,7 +10,7 @@ from database.clean_memory import reset_memory
 from interface.AppProperties import AppProperties
 from utils import strip_markdown_markings
 from workflow.app_state_helpers import get_all_writes_messages, is_human_node_next, has_started, has_itinerary, \
-    has_bookings, has_finished, get_next_node
+    has_bookings, has_finished, get_next_node, get_writes
 
 load_dotenv()
 
@@ -25,7 +25,13 @@ def reload_config(country: str):
 
 _ss = st.session_state
 
-st.title("Traveller")
+if 'selected_user' not in st.session_state:
+    st.title("Traveller - select user first!")
+else:
+    st.title(f"Hello, {st.session_state.selected_user.name}!")
+    st.write(f"{st.session_state.selected_user.get_traveler_intro_message()}")
+
+
 # App initialization
 if 'app_properties' not in st.session_state:
     _ss.app_properties = AppProperties()
@@ -48,7 +54,7 @@ with st.sidebar:
     _ap.origin_country = st.text_input("Origin country", value="Singapore")
 
     with st.form("TARE Form"):
-        __country = st.selectbox("Select a country", filtered_countries['Country'].tolist()).strip()
+        __countries = st.multiselect("Select a country", filtered_countries['Country'].tolist())
         __start_date = st.date_input("Start date", value=datetime.date.today())
         __end_date = st.date_input("End date", value=datetime.date.today() + datetime.timedelta(days=7))
 
@@ -56,9 +62,9 @@ with st.sidebar:
         st.write(f"Duration: {_time_diff} days")
 
         # Every form must have a submit button.
-        load_button = st.form_submit_button("Load TARE")
+        load_button = st.form_submit_button("Load TARE", disabled=not bool(st.session_state.get('selected_user')))
         if load_button:
-            _ap.country = __country
+            _ap.country = ",".join(__countries).strip()
             _ap.start_date = __start_date
             _ap.end_date = __end_date
             reload_config(_ap.country)
@@ -81,19 +87,29 @@ def run_chain():
                                   start_date=_ap.start_date.strftime('%Y-%m-%d'),
                                   end_date=_ap.end_date.strftime('%Y-%m-%d'),
                                   origin_country=_ap.origin_country,
-                                  destination_country=_ap.country) \
+                                  destination_country=_ap.country,
+                                  traveler_info=_ss.selected_user.get_traveler_intro_message()) \
             if not has_started(app_state) else None
 
     # Continue running the chain until it gets interrupted.
+    st.session_state.buttons = []
     for event in app.stream(input=input_,
                             config=_ss.chat_config,
                             stream_mode='values'):
         # Update the messages list right after the execution.
         app_state = app.get_state(_ss.chat_config)
         with st.spinner(f'Loading messages... {get_next_node(app_state)}'):
-            for msg in get_all_writes_messages(app_state):
-                with st.chat_message("ai"):
-                    st.markdown(msg.content)
+            writes = get_writes(app_state)
+            if isinstance(writes, dict):
+                for node, writes_info in writes.items():
+                    if 'messages' in writes_info:
+                        for msg in writes_info['messages']:
+                            with st.chat_message("ai"):
+                                st.markdown(msg.content)
+                    if 'potential_answers' in writes_info:
+                        for potential_answer in writes_info['potential_answers']:
+                            st.session_state.buttons = potential_answer
+
     load_app_state()
     st.rerun()
 
@@ -142,14 +158,14 @@ with st.expander("Debug"):
     st.write(f"Message count: {len(_ap.messages)})")
     if has_started(_ss.app_state):
         st.write(f"next state: {str(_ss.app_state.next)})")
-        st.write(f"Load count: {str(st.session_state.load_count)}")
+        st.write(f"Load count: {str(_ss.load_count)}")
     else:
         with st.spinner('Running initial...'):
             run_chain()
         st.write(f"next state: {str(_ss.app_state.next)})")
         st.write(
             f"Country: {str(_ss.app_state.values['destination_country'])} : from {_ss.app_state.values['start_date']} to {_ss.app_state.values['end_date']}")
-        st.write(f"Load count: {str(st.session_state.load_count)}")
+        st.write(f"Load count: {str(_ss.load_count)}")
 
 if not is_human_node_next(_ss.app_state) and not has_finished(_ss.app_state):
     with st.spinner(f'Running step {_ss.app_state.next} ...'):
