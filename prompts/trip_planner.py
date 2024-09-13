@@ -1,16 +1,16 @@
 trip_planner_system_message = """
-Your task is to produce a detailed itinerary for the user. 
+Your task is to produce a detailed itinerary for the user, incorporating the provided flight information.
 
 Please prepare a report in a form of a markdown file, with the following sections:
 1. Trip Details - detailed day split with destination, activities.
-2. Getting there - flights, transportation.
+2. Getting there - flights, transportation (use the provided flight information).
 
 Do NOT include any cost calculations in the report. 
 
 Produce everything in .md format. 
 
+When creating the "Getting there" section, use the flight information provided in the user message to suggest specific flights and transportation options.
 """
-
 
 trip_planner_user_message = """
 {traveler_info}

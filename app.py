@@ -12,6 +12,7 @@ from utils import strip_markdown_markings
 from workflow.app_state_helpers import get_all_writes_messages, is_human_node_next, has_started, has_itinerary, \
     has_bookings, has_finished, get_next_node, get_writes
 
+
 load_dotenv()
 
 from country_data_parser import country_df, filter_for_population_in_between
@@ -44,8 +45,29 @@ if 'load_count' not in st.session_state:
 
 with st.sidebar:
     st.header("Filters")
-    min_pop = 10 ** 6 * st.number_input("Minimum population [M]", value=0, step=100)
-    max_pop = 10 ** 6 * st.number_input("Maximum population [M]", value=100, step=10)
+    st.header("Population Range")
+    st.write("Population scale is logarithmic")
+    min_pop, max_pop = st.slider(
+        "Select population range",
+        min_value=1.0,
+        max_value=10.0,
+        value=(1.0, 8.0),
+        step=0.1
+    )
+    # Convert logarithmic scale to actual population
+    min_pop = 10 ** min_pop
+    max_pop = 10 ** max_pop
+    
+    # Format population values with 'k' for thousands and 'm' for millions
+    def format_population(value):
+        if value >= 1_000_000:
+            return f"{value/1_000_000:.1f}m"
+        elif value >= 1_000:
+            return f"{value/1_000:.1f}k"
+        else:
+            return f"{value:.0f}"
+    
+    st.write(f"Selected range: {format_population(min_pop)} to {format_population(max_pop)}")
     region = st.selectbox("Select a region", country_df['Region'].unique())
 
     # Country selection - it needs to refresh when the region and population range changes
@@ -58,8 +80,14 @@ with st.sidebar:
         __start_date = st.date_input("Start date", value=datetime.date.today())
         __end_date = st.date_input("End date", value=datetime.date.today() + datetime.timedelta(days=7))
 
-        _time_diff = (__end_date - __start_date).days
-        st.write(f"Duration: {_time_diff} days")
+        # Calculate and update duration whenever start or end date changes
+        if 'start_date' not in st.session_state or 'end_date' not in st.session_state or __start_date != st.session_state.start_date or __end_date != st.session_state.end_date:
+            st.session_state.start_date = __start_date
+            st.session_state.end_date = __end_date
+            st.session_state.duration = (__end_date - __start_date).days
+
+        # Display the duration
+        st.write(f"Duration: {st.session_state.duration} days")
 
         # Every form must have a submit button.
         load_button = st.form_submit_button("Load TARE", disabled=not bool(st.session_state.get('selected_user')))
